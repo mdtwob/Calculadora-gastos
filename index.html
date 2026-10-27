@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinSociedade - Gestão de Serviços & Dívida</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#22c55e',
+              600: '#16a34a',
+              900: '#14532d'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Smooth transitions for tabs and dark mode */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans pb-20 md:pb-8 transition-colors duration-200">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-30 backdrop-blur-md bg-slate-900/80 border-b border-slate-800 px-4 py-3">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-gradient-to-tr from-emerald-500 to-teal-400 p-2.5 rounded-xl text-slate-950 font-black shadow-lg shadow-emerald-500/20">
+          <i class="fa-solid font-bold fa-wallet text-xl"></i>
+        </div>
+        <div>
+          <h1 className="font-bold text-lg leading-tight tracking-tight text-white">FinSociedade</h1>
+          <p class="text-xs text-slate-400">Controle de Serviços, Sócio & Compulsão</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <button onclick="exportData()" class="p-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all">
+          <i class="fa-solid fa-download text-emerald-400"></i>
+          <span class="hidden sm:inline">Backup JSON</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-6xl mx-auto px-4 pt-6 space-y-6">
+
+    <!-- TOP ALERT BANNER (DEBT STATUS) -->
+    <div id="debt-banner" class="p-4 rounded-2xl border bg-amber-950/30 border-amber-800/50 text-amber-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="flex items-start gap-3">
+        <div class="p-2.5 rounded-xl bg-amber-500/20 text-amber-500 mt-0.5">
+          <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+        </div>
+        <div>
+          <h3 class="font-semibold text-sm">Meta Principal: Quitar Dívida do Sócio</h3>
+          <p class="text-xs opacity-80 mt-0.5" id="banner-text">
+            Sua parte de cada novo serviço abaterá a dívida de R$ 7.500,00 automaticamente.
+          </p>
+        </div>
+      </div>
+      
+      <div class="w-full md:w-auto flex items-center justify-between md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-amber-500/20">
+        <div class="text-left md:text-right">
+          <span class="text-[10px] uppercase font-bold tracking-wider opacity-70 block">Restante da Dívida</span>
+          <span class="text-lg font-bold text-amber-500" id="banner-debt-val">R$ 7.500,00</span>
+        </div>
+        <button onclick="switchTab('debt')" class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-amber-500 text-slate-950 hover:bg-amber-400 transition-all flex items-center gap-1 shadow-md shadow-amber-500/10">
+          <span>Ver Dívida</span>
+          <i class="fa-solid fa-arrow-right text-xs"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- DESKTOP NAVIGATION TABS -->
+    <div class="hidden md:flex items-center gap-2 p-1.5 rounded-2xl bg-slate-900 border border-slate-800">
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-btn flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 bg-emerald-500 text-slate-950 shadow-md">
+        <i class="fa-solid fa-chart-pie"></i><span>Dashboard</span>
+      </button>
+      <button onclick="switchTab('income')" id="nav-income" class="tab-btn flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-circle-plus"></i><span>Novo Serviço</span>
+      </button>
+      <button onclick="switchTab('expense')" id="nav-expense" class="tab-btn flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-circle-minus"></i><span>Registrar Saída</span>
+      </button>
+      <button onclick="switchTab('debt')" id="nav-debt" class="tab-btn flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-handshake"></i><span>Gestão Dívida</span>
+      </button>
+      <button onclick="switchTab('settings')" id="nav-settings" class="tab-btn flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-sliders"></i><span>Ajustes & Backup</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: DASHBOARD -->
+    <div id="tab-dashboard" class="tab-content active space-y-6">
+      <!-- CARDS -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-slate-400">Saldo Dívida Sócio</span>
+            <i class="fa-solid fa-handshake text-amber-500"></i>
+          </div>
+          <div class="mt-2">
+            <h4 id="card-debt" class="text-xl sm:text-2xl font-bold text-amber-500">R$ 0,00</h4>
+            <p class="text-[10px] text-slate-400 mt-1">Aporte Inicial: R$ 7.500,00</p>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-slate-400">Seu Dinheiro Livre</span>
+            <i class="fa-solid fa-wallet text-emerald-400"></i>
+          </div>
+          <div class="mt-2">
+            <h4 id="card-free" class="text-xl sm:text-2xl font-bold text-emerald-400">R$ 0,00</h4>
+            <p class="text-[10px] text-slate-400 mt-1">Disponível para uso pessoal</p>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-slate-400">Reserva Guardada</span>
+            <i class="fa-solid fa-piggy-bank text-indigo-400"></i>
+          </div>
+          <div class="mt-2">
+            <h4 id="card-savings" class="text-xl sm:text-2xl font-bold text-indigo-400">R$ 0,00</h4>
+            <p class="text-[10px] text-slate-400 mt-1">Poupança anti-compulsão</p>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-slate-400">Caixa Empresa</span>
+            <i class="fa-solid fa-briefcase text-teal-400"></i>
+          </div>
+          <div class="mt-2">
+            <h4 id="card-company" class="text-xl sm:text-2xl font-bold text-teal-400">R$ 0,00</h4>
+            <p class="text-[10px] text-slate-400 mt-1">1/3 + Serviços Pequenos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANTI-COMPULSION SPENDING VELOCITY -->
+      <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <div class="p-2 rounded-xl bg-rose-500/10 text-rose-500">
+              <i class="fa-solid fa-fire text-lg"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold text-sm">Termômetro de Gastos Pessoais (Hoje)</h3>
+              <p class="text-xs text-slate-400">Controle para travar compras desnecessárias</p>
+            </div>
+          </div>
+          <span id="speed-status" class="text-xs px-2.5 py-1 rounded-full font-semibold border bg-emerald-500/10 border-emerald-500/30 text-emerald-400">
+            Dentro do Teto
+          </span>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Gasto Pessoal Hoje</span>
+            <span id="speed-text" class="font-semibold">R$ 0,00 / R$ 80,00</span>
+          </div>
+          <div class="w-full h-3 rounded-full bg-slate-800 overflow-hidden">
+            <div id="speed-bar" class="h-full rounded-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <div class="flex justify-between text-[11px] text-slate-400 pt-1">
+            <span>Teto diário configurado: <strong id="speed-limit-label">R$ 80,00</strong></span>
+            <span>Total em Impulsos: <strong id="total-impulse-label" class="text-rose-400">R$ 0,00</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRANSACTIONS LIST -->
+      <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+        <h3 class="font-semibold text-sm mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-clock text-emerald-500"></i>
+          <span>Lançamentos Recentes</span>
+        </h3>
+        <div id="tx-list" class="space-y-2 max-h-80 overflow-y-auto pr-1">
+          <!-- Filled dynamically by JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: INCOME -->
+    <div id="tab-income" class="tab-content max-w-2xl mx-auto">
+      <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5">
+        <div class="flex items-center gap-3">
+          <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500">
+            <i class="fa-solid fa-circle-plus text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold">Registrar Novo Serviço</h2>
+            <p class="text-xs text-slate-400">Divisão automática em 3 partes ou caixa da empresa</p>
+          </div>
+        </div>
+
+        <form onsubmit="handleIncomeSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Descrição do Serviço</label>
+            <input id="inc-desc" type="text" required placeholder="Ex: Manutenção de Equipamento" class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-sm outline-none focus:border-emerald-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Valor Total (R$)</label>
+            <input id="inc-amount" type="number" step="0.01" required placeholder="0,00" class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-lg font-bold text-emerald-400 outline-none focus:border-emerald-500" />
+          </div>
+
+          <!-- Small Job Toggle -->
+          <div onclick="toggleSmallJob()" class="p-4 rounded-xl border border-slate-800 bg-slate-950/50 flex items-center justify-between cursor-pointer">
+            <div class="flex items-center gap-3">
+              <i id="small-job-icon" class="fa-solid fa-briefcase text-slate-500"></i>
+              <div>
+                <h4 class="text-sm font-semibold">Serviço Muito Pequeno?</h4>
+                <p class="text-xs text-slate-400">Se ativado, 100% do valor vai para o Caixa da Empresa</p>
+              </div>
+            </div>
+            <input type="checkbox" id="inc-small" class="w-5 h-5 accent-teal-500 rounded" />
+          </div>
+
+          <button type="submit" class="w-full py-3.5 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all">
+            Confirmar e Processar Divisão
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 3: EXPENSE -->
+    <div id="tab-expense" class="tab-content max-w-2xl mx-auto">
+      <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5">
+        <div class="flex items-center gap-3">
+          <div class="p-2.5 rounded-xl bg-rose-500/10 text-rose-500">
+            <i class="fa-solid fa-circle-minus text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold">Registrar Nova Saída / Gasto</h2>
+            <p class="text-xs text-slate-400">Monitore gastos compulsivos</p>
+          </div>
+        </div>
+
+        <form onsubmit="handleExpenseSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Descrição</label>
+            <input id="exp-desc" type="text" required placeholder="Ex: Lanche, Jogo, Ferramentas" class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-sm outline-none focus:border-rose-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Valor (R$)</label>
+            <input id="exp-amount" type="number" step="0.01" required placeholder="0,00" class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-lg font-bold text-rose-400 outline-none focus:border-rose-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Origem</label>
+            <select id="exp-source" class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-sm outline-none">
+              <option value="free">Meu Saldo Livre</option>
+              <option value="company">Caixa da Empresa</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Categoria de Autocontrole</label>
+            <select id="exp-cat" class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-sm outline-none">
+              <option value="Impulso">🔥 Impulso / Não Essencial</option>
+              <option value="Essencial">🏠 Essencial</option>
+              <option value="Lazer">🍿 Lazer Programado</option>
+              <option value="Outros">📦 Outros</option>
+            </select>
+          </div>
+
+          <button type="submit" class="w-full py-3.5 px-4 bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-rose-500/20 transition-all">
+            Salvar Gasto
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 4: DEBT -->
+    <div id="tab-debt" class="tab-content max-w-4xl mx-auto space-y-6">
+      <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+          <div class="flex items-center gap-3">
+            <div class="p-3 rounded-xl bg-amber-500/10 text-amber-500">
+              <i class="fa-solid fa-handshake text-2xl"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold">Aporte Inicial do Sócio</h2>
+              <p class="text-xs text-slate-400">Dívida assumida no início da empresa</p>
+            </div>
+          </div>
+          <div>
+            <span class="text-xs text-slate-400 uppercase font-semibold block">Falta Pagar</span>
+            <span id="debt-page-val" class="text-3xl font-extrabold text-amber-500">R$ 7.500,00</span>
+          </div>
+        </div>
+
+        <div class="mt-6 space-y-2">
+          <div class="flex justify-between text-xs font-semibold">
+            <span class="text-slate-400">Progresso</span>
+            <span id="debt-pct" class="text-emerald-400">0% PAGO</span>
+          </div>
+          <div class="w-full h-4 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700">
+            <div id="debt-progress-bar" class="h-full bg-gradient-to-r from-amber-500 to-emerald-400 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANUAL ABATEMENT FORM -->
+      <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+        <h3 class="text-sm font-bold mb-4">Registrar Abatimento Avulso</h3>
+        <form onsubmit="handleAmortSubmit(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <input id="amort-val" type="number" step="0.01" required placeholder="Valor (R$)" class="px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm outline-none" />
+          <input id="amort-note" type="text" placeholder="Observação" class="px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm outline-none" />
+          <button type="submit" class="py-2.5 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs">Abater Dívida</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 5: SETTINGS & BACKUP -->
+    <div id="tab-settings" class="tab-content max-w-2xl mx-auto space-y-6">
+      <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+        <h3 class="text-sm font-bold">Sincronização & Backup entre Celular e PC</h3>
+        <p class="text-xs text-slate-400">
+          Como este aplicativo roda no seu navegador, você pode usar o botão abaixo para salvar o arquivo de backup e abrir no outro dispositivo.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          <button onclick="exportData()" class="py-3 px-4 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-bold flex items-center justify-center gap-2">
+            <i class="fa-solid fa-download text-emerald-400"></i>
+            <span>Baixar Backup (JSON)</span>
+          </button>
+
+          <label class="py-3 px-4 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer text-center">
+            <i class="fa-solid fa-upload text-indigo-400"></i>
+            <span>Restaurar Backup</span>
+            <input type="file" accept=".json" onchange="importData(event)" class="hidden" />
+          </label>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MOBILE BOTTOM NAVIGATION -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur-lg bg-slate-950/90 border-slate-800 px-2 py-2">
+    <div class="flex items-center justify-around text-slate-500 text-[10px]">
+      <button onclick="switchTab('dashboard')" class="mob-tab flex flex-col items-center gap-1 p-1 text-emerald-400">
+        <i class="fa-solid fa-chart-pie text-base"></i><span>Início</span>
+      </button>
+      <button onclick="switchTab('income')" class="mob-tab flex flex-col items-center gap-1 p-1">
+        <i class="fa-solid fa-circle-plus text-base"></i><span>+ Serviço</span>
+      </button>
+      <button onclick="switchTab('expense')" class="mob-tab flex flex-col items-center gap-1 p-1">
+        <i class="fa-solid fa-circle-minus text-base"></i><span>- Saída</span>
+      </button>
+      <button onclick="switchTab('debt')" class="mob-tab flex flex-col items-center gap-1 p-1">
+        <i class="fa-solid fa-handshake text-base"></i><span>Dívida</span>
+      </button>
+      <button onclick="switchTab('settings')" class="mob-tab flex flex-col items-center gap-1 p-1">
+        <i class="fa-solid fa-sliders text-base"></i><span>Ajustes</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // App State Initialization
+    const DEFAULT_DATA = {
+      partnerDebt: 7500,
+      debtAmortizations: [],
+      transactions: [],
+      dailySpendingLimit: 80
+    };
+
+    let appData = JSON.parse(localStorage.getItem('finsociedade_html_v1')) || DEFAULT_DATA;
+
+    function saveData() {
+      localStorage.setItem('finsociedade_html_v1', JSON.stringify(appData));
+      renderApp();
+    }
+
+    function formatBRL(val) {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+    }
+
+    // Switch Tabs
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+    }
+
+    function toggleSmallJob() {
+      const checkbox = document.getElementById('inc-small');
+      checkbox.checked = !checkbox.checked;
+    }
+
+    // Handlers
+    function handleIncomeSubmit(e) {
+      e.preventDefault();
+      const desc = document.getElementById('inc-desc').value;
+      const amount = parseFloat(document.getElementById('inc-amount').value);
+      const isSmall = document.getElementById('inc-small').checked;
+
+      if (!amount || amount <= 0) return;
+
+      let companyShare = 0, partnerShare = 0, userDebtAlloc = 0, userSavingsAlloc = 0, userFreeAlloc = 0;
+
+      if (isSmall) {
+        companyShare = amount;
+      } else {
+        const third = amount / 3;
+        companyShare = third;
+        partnerShare = third;
+        // User share (1/3) split: 40% debt, 30% savings, 30% free spend
+        userDebtAlloc = third * 0.40;
+        userSavingsAlloc = third * 0.30;
+        userFreeAlloc = third * 0.30;
+
+        // Auto amortize debt
+        if (userDebtAlloc > 0) {
+          appData.debtAmortizations.push({
+            id: 'auto-' + Date.now(),
+            amount: userDebtAlloc,
+            date: new Date().toISOString(),
+            note: `Amortização (${desc})`
+          });
+        }
+      }
+
+      appData.transactions.unshift({
+        id: Date.now().toString(),
+        type: 'income',
+        description: desc,
+        amount,
+        isSmall,
+        companyShare,
+        userFreeAlloc,
+        userSavingsAlloc,
+        date: new Date().toISOString()
+      });
+
+      document.getElementById('inc-desc').value = '';
+      document.getElementById('inc-amount').value = '';
+      document.getElementById('inc-small').checked = false;
+
+      saveData();
+      switchTab('dashboard');
+    }
+
+    function handleExpenseSubmit(e) {
+      e.preventDefault();
+      const desc = document.getElementById('exp-desc').value;
+      const amount = parseFloat(document.getElementById('exp-amount').value);
+      const source = document.getElementById('exp-source').value;
+      const category = document.getElementById('exp-cat').value;
+
+      if (!amount || amount <= 0) return;
+
+      appData.transactions.unshift({
+        id: Date.now().toString(),
+        type: 'expense',
+        description: desc,
+        amount,
+        source,
+        category,
+        date: new Date().toISOString()
+      });
+
+      document.getElementById('exp-desc').value = '';
+      document.getElementById('exp-amount').value = '';
+
+      saveData();
+      switchTab('dashboard');
+    }
+
+    function handleAmortSubmit(e) {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById('amort-val').value);
+      const note = document.getElementById('amort-note').value || 'Abatimento Avulso';
+
+      if (!amount || amount <= 0) return;
+
+      appData.debtAmortizations.unshift({
+        id: Date.now().toString(),
+        amount,
+        date: new Date().toISOString(),
+        note
+      });
+
+      document.getElementById('amort-val').value = '';
+      document.getElementById('amort-note').value = '';
+
+      saveData();
+      switchTab('debt');
+    }
+
+    function deleteTx(id) {
+      appData.transactions = appData.transactions.filter(t => t.id !== id);
+      saveData();
+    }
+
+    // Export/Import
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
+      const a = document.createElement('a');
+      a.href = dataStr;
+      a.download = `finsociedade_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+    }
+
+    function importData(e) {
+      const reader = new FileReader();
+      if (e.target.files && e.target.files[0]) {
+        reader.readAsText(e.target.files[0], "UTF-8");
+        reader.onload = (event) => {
+          try {
+            const parsed = JSON.parse(event.target.result);
+            if (parsed && typeof parsed.partnerDebt === 'number') {
+              appData = parsed;
+              saveData();
+              alert("Dados restaurados com sucesso!");
+            }
+          } catch (err) {
+            alert("Arquivo de backup inválido.");
+          }
+        }
+      }
+    }
+
+    // Render Function
+    function renderApp() {
+      // 1. Debt
+      const totalPaid = appData.debtAmortizations.reduce((acc, curr) => acc + curr.amount, 0);
+      const remainingDebt = Math.max(0, appData.partnerDebt - totalPaid);
+      
+      document.getElementById('banner-debt-val').innerText = formatBRL(remainingDebt);
+      document.getElementById('card-debt').innerText = formatBRL(remainingDebt);
+      document.getElementById('debt-page-val').innerText = formatBRL(remainingDebt);
+
+      const pctPaid = Math.min(100, Math.round((totalPaid / appData.partnerDebt) * 100));
+      document.getElementById('debt-pct').innerText = `${pctPaid}% PAGO`;
+      document.getElementById('debt-progress-bar').style.width = `${pctPaid}%`;
+
+      // 2. Balances
+      let companyCash = 0, userFree = 0, userSavings = 0, impulseTotal = 0, spentToday = 0;
+      const today = new Date().toISOString().split('T')[0];
+
+      appData.transactions.forEach(t => {
+        if (t.type === 'income') {
+          companyCash += t.companyShare || 0;
+          userFree += t.userFreeAlloc || 0;
+          userSavings += t.userSavingsAlloc || 0;
+        } else if (t.type === 'expense') {
+          if (t.source === 'company') companyCash -= t.amount;
+          else userFree -= t.amount;
+
+          if (t.category === 'Impulso') impulseTotal += t.amount;
+
+          if (t.date.split('T')[0] === today && t.source !== 'company') {
+            spentToday += t.amount;
+          }
+        }
+      });
+
+      document.getElementById('card-free').innerText = formatBRL(userFree);
+      document.getElementById('card-savings').innerText = formatBRL(userSavings);
+      document.getElementById('card-company').innerText = formatBRL(companyCash);
+
+      // 3. Spending Speed
+      const limit = appData.dailySpendingLimit || 80;
+      const speedPct = Math.min(100, Math.round((spentToday / limit) * 100));
+      document.getElementById('speed-text').innerText = `${formatBRL(spentToday)} / ${formatBRL(limit)}`;
+      document.getElementById('speed-bar').style.width = `${speedPct}%`;
+      document.getElementById('speed-limit-label').innerText = formatBRL(limit);
+      document.getElementById('total-impulse-label').innerText = formatBRL(impulseTotal);
+
+      // 4. Render Transaction List
+      const txListEl = document.getElementById('tx-list');
+      if (appData.transactions.length === 0) {
+        txListEl.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Nenhum lançamento cadastrado.</p>`;
+      } else {
+        txListEl.innerHTML = appData.transactions.map(t => `
+          <div class="p-3 rounded-xl border border-slate-800 bg-slate-950/60 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2.5">
+              <i class="fa-solid ${t.type === 'income' ? 'fa-arrow-up text-emerald-400' : 'fa-arrow-down text-rose-400'}"></i>
+              <div>
+                <p class="font-semibold text-slate-200">${t.description}</p>
+                <span class="text-[10px] text-slate-400">${new Date(t.date).toLocaleDateString('pt-BR')}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-bold ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}">
+                ${t.type === 'income' ? '+' : '-'}${formatBRL(t.amount)}
+              </span>
+              <button onclick="deleteTx('${t.id}')" class="text-slate-500 hover:text-rose-500 p-1">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Initial Load
+    renderApp();
+  </script>
+</body>
+</html>
